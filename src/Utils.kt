@@ -19,3 +19,8 @@ fun printResult(title: String, block: () -> Any) {
     println("Result $title")
     println(block())
 }
+
+/**
+ * Convert a given list of strings to integers
+ */
+fun List<String>.toInts() = map { it.toInt() }
