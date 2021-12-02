@@ -6,17 +6,17 @@ import toInts
 
 fun main() {
     fun part1(input: List<String>) = input.toInts()
-        .zipWithNext { first, second -> if (first < second) "inc" else "other" }
-        .count { "inc" == it }
+        .zipWithNext()
+        .count { (first, second) -> first < second }
 
     fun part2(input: List<String>) = input.toInts()
         .windowed(3) { it.sum() }
-        .zipWithNext { first, second -> if (first < second) "inc" else "other" }
-        .count { "inc" == it }
+        .zipWithNext()
+        .count { (first, second) -> first < second }
 
     val testInput = readInput("day01/Day01_test")
-    printResult("Test 1") { part1(testInput) }
-    printResult("Test 2") { part2(testInput) }
+    with(part1(testInput)) { check(7 == this) { "result test 1: $this" } }
+    with(part2(testInput)) { check(5 == this) { "result test 2: $this" } }
 
     val input = readInput("day01/Day01")
     printResult("Part 1") { part1(input) }

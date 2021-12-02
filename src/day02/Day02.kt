@@ -30,9 +30,8 @@ fun main() {
         }.result()
 
     val testInput = readInput("day02/Day02_test")
-
-    printResult("Test 1") { part1(testInput) }
-    printResult("Test 2") { part2(testInput) }
+    with(part1(testInput)) { check(150 == this) { "result test 1: $this" } }
+    with(part2(testInput)) { check(900 == this) { "result test 2: $this" } }
 
     val input = readInput("day02/Day02")
     printResult("Part 1") { part1(input) }
