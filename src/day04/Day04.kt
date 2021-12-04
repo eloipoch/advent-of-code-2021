@@ -41,14 +41,47 @@ fun main() {
 
 
     fun part2(input: List<String>): Int {
-        return 1
+        val numbers = input.first().split(",").map { it.toInt() }
+
+        val boards = input.drop(1)
+            .chunked(6)
+            .map { it.drop(1) }
+            .map { it.map { line -> line.trim().split("\\D+".toRegex()).map { number -> number.toInt() } } }
+
+        val marked = List(boards.size) { List(10) { arrayOfNulls<Int>(5).toMutableList() } }
+
+        val completedBoards = BooleanArray(boards.size)
+        var lastCompletedBoard: Int? = null
+        var winnerNumber: Int? = null
+
+        for (number in numbers) {
+            boards.mapIndexed { index, board ->
+                if (!completedBoards[index]) {
+                    val position = board.flatten().indexOf(number)
+                    if (position != -1) {
+                        marked[index][position / 5][position % 5] = number
+                        marked[index][(position % 5) + 5][position / 5] = number
+                        winnerNumber = number
+                        completedBoards[index] = marked[index].any() { it.filterNotNull().size == 5 }
+                        lastCompletedBoard = index
+                    }
+                }
+            }
+        }
+
+        val sumUnmarked =
+            boards[lastCompletedBoard!!].flatten().sum() -
+                    marked[lastCompletedBoard!!].take(5).flatten().filterNotNull().sum()
+
+        return sumUnmarked * winnerNumber!!
+
     }
 
     val testInput = readInput("day04/Day04_test")
     with(part1(testInput)) { check(4512 == this) { "result test 1: $this" } }
-//    with(part2(testInput)) { check(? == this) { "result test 2: $this" } }
+    with(part2(testInput)) { check(1924 == this) { "result test 2: $this" } }
 
     val input = readInput("day04/Day04")
     printResult("Part 1") { part1(input) }
-//    printResult("Part 2") { part2(input) }
+    printResult("Part 2") { part2(input) }
 }
