@@ -6,75 +6,38 @@ import readInput
 fun main() {
     fun part1(input: List<String>): Int {
         val numbers = input.first().split(",").map { it.toInt() }
+        val boards = input.drop(1).chunked(6).map { it.drop(1) }.map { Board(it) }
 
-        val boards = input.drop(1)
-            .chunked(6)
-            .map { it.drop(1) }
-            .map { it.map { line -> line.trim().split("\\D+".toRegex()).map { number -> number.toInt() } } }
+        var firstCompletedBoardScore: Int? = null
 
-        val marked = List(boards.size) { List(10) { arrayOfNulls<Int>(5).toMutableList() } }
-
-        val winner = numbers
-            .asSequence()
-            .takeWhile {
-                marked.flatten().firstOrNull { it.filterNotNull().size == 5 } == null
-            }
-            .onEach { number ->
-                boards.mapIndexed { index, board ->
-                    val position = board.flatten().indexOf(number)
-                    if (position != -1) {
-                        marked[index][position / 5][position % 5] = number
-                        marked[index][(position % 5) + 5][position / 5] = number
-                    }
+        out@ for (number in numbers) {
+            for (board in boards) {
+                if (board.mark(number)) {
+                    firstCompletedBoardScore = board.score(number)
+                    break@out
                 }
-            }.last()
-
-        val winnerBoard = marked.indexOfFirst { board ->
-            board.any { it.filterNotNull().size == 5 }
+            }
         }
 
-        val sumUnmarked =
-            boards[winnerBoard].flatten().sum() - marked[winnerBoard].take(5).flatten().filterNotNull().sum()
-
-        return sumUnmarked * winner
+        return firstCompletedBoardScore!!
     }
 
 
     fun part2(input: List<String>): Int {
         val numbers = input.first().split(",").map { it.toInt() }
+        val boards = input.drop(1).chunked(6).map { it.drop(1) }.map { Board(it) }
 
-        val boards = input.drop(1)
-            .chunked(6)
-            .map { it.drop(1) }
-            .map { it.map { line -> line.trim().split("\\D+".toRegex()).map { number -> number.toInt() } } }
+        var lastCompletedBoardScore: Int? = null
 
-        val marked = List(boards.size) { List(10) { arrayOfNulls<Int>(5).toMutableList() } }
-
-        val completedBoards = BooleanArray(boards.size)
-        var lastCompletedBoard: Int? = null
-        var winnerNumber: Int? = null
-
-        for (number in numbers) {
-            boards.mapIndexed { index, board ->
-                if (!completedBoards[index]) {
-                    val position = board.flatten().indexOf(number)
-                    if (position != -1) {
-                        marked[index][position / 5][position % 5] = number
-                        marked[index][(position % 5) + 5][position / 5] = number
-                        winnerNumber = number
-                        completedBoards[index] = marked[index].any() { it.filterNotNull().size == 5 }
-                        lastCompletedBoard = index
-                    }
+        numbers.map { number ->
+            boards.filterNot(Board::completed).map { board ->
+                if (board.mark(number)) {
+                    lastCompletedBoardScore = board.score(number)
                 }
             }
         }
 
-        val sumUnmarked =
-            boards[lastCompletedBoard!!].flatten().sum() -
-                    marked[lastCompletedBoard!!].take(5).flatten().filterNotNull().sum()
-
-        return sumUnmarked * winnerNumber!!
-
+        return lastCompletedBoardScore!!
     }
 
     val testInput = readInput("day04/Day04_test")
@@ -84,4 +47,31 @@ fun main() {
     val input = readInput("day04/Day04")
     printResult("Part 1") { part1(input) }
     printResult("Part 2") { part2(input) }
+}
+
+class Board private constructor(val numbers: List<List<Int>>) : List<List<Int>> by numbers {
+    private var completed = false
+    private val markedRows = Array(5) { arrayOfNulls<Int>(5) }
+    private val markedColumns = Array(5) { arrayOfNulls<Int>(5) }
+
+    fun mark(number: Int): Boolean {
+        val position = numbers.flatten().indexOf(number)
+
+        if (position != -1) {
+            markedRows[position / 5][position % 5] = number
+            markedColumns[position % 5][position / 5] = number
+            completed = (markedRows + markedColumns).any() { it.filterNotNull().size == 5 }
+        }
+
+        return completed
+    }
+
+    fun score(winner: Int) = winner * (numbers.flatten().sum() - markedRows.flatten().filterNotNull().sum())
+
+    fun completed() = completed
+
+    companion object {
+        operator fun invoke(lines: List<String>) =
+            Board(lines.map { line -> line.trim().split("\\D+".toRegex()).map { number -> number.toInt() } })
+    }
 }
