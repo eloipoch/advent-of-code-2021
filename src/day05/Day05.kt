@@ -1,0 +1,54 @@
+package day05
+
+import printResult
+import readInput
+
+fun main() {
+    fun part1(input: List<String>): Int {
+        val vents = input.map {
+            it.split(" -> ").map(Point::parse).run { Vector(this[0], this[1]) }
+        }
+
+        return vents.flatten()
+            .groupingBy { it }
+            .eachCount()
+            .filter { (point, times) -> times >= 2 }
+            .count()
+    }
+
+
+    fun part2(input: List<String>): Int {
+        return 1
+    }
+
+    val testInput = readInput("day05/Day05_test")
+    with(part1(testInput)) { check(5 == this) { "result test 1: $this" } }
+//    with(part2(testInput)) { check(? == this) { "result test 2: $this" } }
+
+    val input = readInput("day05/Day05")
+    printResult("Part 1") { part1(input) }
+//    printResult("Part 2") { part2(input) }
+}
+
+data class Vector(private val list: List<Point>) : List<Point> by list {
+    constructor(a: Point, b: Point) : this(points(minOf(a, b), maxOf(a, b)))
+
+    companion object {
+        fun points(from: Point, to: Point) = when (true) {
+            from.x == to.x -> (from.y..to.y).map { y -> Point(from.x, y) }
+            from.y == to.y -> (from.x..to.x).map { x -> Point(x, from.y) }
+            else -> emptyList()
+        }
+    }
+}
+
+data class Point(val x: Int, val y: Int) : Comparable<Point> {
+    override fun compareTo(other: Point): Int {
+        return if (x != other.x) x - other.x else y - other.y
+    }
+
+    companion object {
+        fun parse(string: String) = string.split(",").map(String::toInt).run { Point(this[0], this[1]) }
+    }
+}
+
