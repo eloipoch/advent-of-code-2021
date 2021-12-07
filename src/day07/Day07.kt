@@ -4,39 +4,32 @@ import day07.Day07.part1
 import day07.Day07.part2
 import printResult
 import readInput
-import toInts
+import splitToInts
+import triangular
 import kotlin.Int.Companion.MAX_VALUE
 import kotlin.math.abs
 import kotlin.math.min
 
 object Day07 {
     fun part1(input: List<String>): Int {
-        val crabs = input.first().split(",").toInts()
+        val crabs = input.first().splitToInts()
         val min = crabs.minOf { it }
         val max = crabs.maxOf { it }
 
         return (min..max).fold(MAX_VALUE) { best, current ->
-            min(
-                best,
-                crabs.fold(0) { movements, crab -> movements + abs(crab - current) }
-            )
+            min(best, crabs.sumOf { abs(it - current) })
         }
     }
 
     fun part2(input: List<String>): Int {
-        val crabs = input.first().split(",").toInts()
+        val crabs = input.first().splitToInts()
         val min = crabs.minOf { it }
         val max = crabs.maxOf { it }
 
         return (min..max).fold(MAX_VALUE) { best, current ->
-            min(
-                best,
-                crabs.fold(0) { movements, crab -> movements + cost(abs(crab - current)) }
-            )
+            min(best, crabs.sumOf { abs(it - current).triangular() })
         }
     }
-
-    private fun cost(n: Int): Int = if (n <= 1) 1 else n + cost(n - 1)
 }
 
 fun main() {
