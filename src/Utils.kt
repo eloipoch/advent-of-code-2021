@@ -20,7 +20,5 @@ fun printResult(title: String, block: () -> Any) {
     println(block())
 }
 
-/**
- * Convert a given list of strings to integers
- */
 fun List<String>.toInts() = map { it.toInt() }
+fun List<Int>.countBy() = groupingBy { it }.eachCount()
