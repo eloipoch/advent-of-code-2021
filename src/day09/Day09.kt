@@ -1,30 +1,45 @@
 package day09
 
 import day09.Day09.part1
+import day09.Point.Position
 import printResult
 import readInput
 
-typealias HeightMap = Array<Array<Int>>
+typealias HeightMap = Array<Array<Point>>
 
 object Day09 {
     fun part1(input: List<String>): Int {
-        val points = input.map { it.map(Char::digitToInt).toTypedArray() }.toTypedArray()
+        val points: HeightMap = input.mapIndexed { y, line ->
+            line.mapIndexed { x, digit ->
+                Point(x, y, digit.digitToInt())
+            }.toTypedArray()
+        }.toTypedArray()
 
-        return points.mapIndexed { y, line ->
-            line.filterIndexed { x, point -> point < points.adjacent(y, x).minOf { it } }
-        }.flatten().sumOf { it + 1 }
+        return points.lowPoints().sumOf { it.value + 1 }
     }
 
-    private fun HeightMap.adjacent(y: Int, x: Int) =
-        listOfNotNull(right(y, x), bottom(y, x), left(y, x), top(y, x))
+    private fun HeightMap.lowPoints() =
+        flatten().filter { it.value < adjacent(it).minOf(Point::value) }
 
-    private fun HeightMap.left(y: Int, x: Int) = getOrNull(y)?.getOrNull(x - 1)
-    private fun HeightMap.bottom(y: Int, x: Int) = getOrNull(y + 1)?.getOrNull(x)
-    private fun HeightMap.right(y: Int, x: Int) = getOrNull(y)?.getOrNull(x + 1)
-    private fun HeightMap.top(y: Int, x: Int) = getOrNull(y - 1)?.getOrNull(x)
+    private fun HeightMap.adjacent(point: Point) =
+        listOf(point.position.top(), point.position.right(), point.position.bottom(), point.position.left())
+            .mapNotNull { pointOf(it) }
+
+    private fun HeightMap.pointOf(position: Position) = getOrNull(position.y)?.getOrNull(position.x)
 
     fun part2(input: List<String>): Int {
         return 1
+    }
+}
+
+data class Point(val position: Position, val value: Int) {
+    constructor(x: Int, y: Int, value: Int) : this(Position(x, y), value)
+
+    data class Position(val x: Int, val y: Int) {
+        fun top() = Position(x, y - 1)
+        fun right() = Position(x + 1, y)
+        fun bottom() = Position(x, y + 1)
+        fun left() = Position(x - 1, y)
     }
 }
 
