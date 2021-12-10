@@ -1,85 +1,131 @@
 package day10
 
+import day10.Day10.Character.Closing
+import day10.Day10.Character.Closing.CloseBrackets
+import day10.Day10.Character.Closing.CloseCurlyBrackets
+import day10.Day10.Character.Closing.CloseParenthesis
+import day10.Day10.Character.Closing.MoreThan
+import day10.Day10.Character.Companion.character
+import day10.Day10.Character.Opening
+import day10.Day10.Character.Opening.LessThan
+import day10.Day10.Character.Opening.OpenBrackets
+import day10.Day10.Character.Opening.OpenCurlyBrackets
+import day10.Day10.Character.Opening.OpenParenthesis
+import day10.Day10.Line.Companion.line
+import day10.Day10.Line.Corrupted
+import day10.Day10.Line.Uncompleted
 import day10.Day10.part1
 import day10.Day10.part2
 import printResult
 import readInput
+import java.security.InvalidParameterException
 
 object Day10 {
-    fun part1(input: List<String>) = input.map(String::toCharArray).mapNotNull(::corrupted).map {
-        when (it) {
-            ")".single() -> 3
-            "]".single() -> 57
-            "}".single() -> 1197
-            ">".single() -> 25137
-            else -> 0 //remove not possible case
+
+    fun part1(input: List<String>) =
+        input.map(::line).filterIsInstance<Corrupted>().sumOf(Corrupted::score)
+
+    fun part2(input: List<String>) =
+        input.map(::line).filterIsInstance<Uncompleted>().map(Uncompleted::score).winner()
+
+    sealed class Character {
+        sealed class Opening(val closing: Closing) : Character() {
+            object OpenParenthesis : Opening(CloseParenthesis)
+            object OpenBrackets : Opening(CloseBrackets)
+            object OpenCurlyBrackets : Opening(CloseCurlyBrackets)
+            object LessThan : Opening(MoreThan)
         }
-    }.sum()
 
-    fun part2(input: List<String>): Long {
-        val test = input.map(String::toCharArray).filter { corrupted(it) == null }
-            .map(::opened)
-            .map { it.map(::expectedClosing).reversed() }
-            .map {
-                it.fold(0L) { total, char ->
-                    val value = when (char) {
-                        ")".single() -> 1
-                        "]".single() -> 2
-                        "}".single() -> 3
-                        ">".single() -> 4
-                        else -> 0 //remove not possible case
-                    }
+        sealed class Closing : Character() {
+            object CloseParenthesis : Closing()
+            object CloseBrackets : Closing()
+            object CloseCurlyBrackets : Closing()
+            object MoreThan : Closing()
+        }
 
-                    ((total * 5) + value).toLong()
+        companion object {
+            fun character(char: Char) = when (char.toString()) {
+                "(" -> OpenParenthesis
+                "[" -> OpenBrackets
+                "{" -> OpenCurlyBrackets
+                "<" -> LessThan
+                ")" -> CloseParenthesis
+                "]" -> CloseBrackets
+                "}" -> CloseCurlyBrackets
+                ">" -> MoreThan
+                else -> throw InvalidParameterException()
+            }
+        }
+    }
+
+    sealed class Line {
+        abstract fun score(): Long
+
+        class Corrupted(private val illegal: Closing) : Line() {
+            override fun score() = when (illegal) {
+                CloseParenthesis -> 3
+                CloseBrackets -> 57
+                CloseCurlyBrackets -> 1197
+                MoreThan -> 25137
+            }.toLong()
+        }
+
+        class Uncompleted(private val closing: List<Closing>) : Line() {
+            override fun score() = closing.fold(0L) { total, closing -> (total * 5) + closing.value() }
+
+            private fun Closing.value() = when (this) {
+                CloseParenthesis -> 1
+                CloseBrackets -> 2
+                CloseCurlyBrackets -> 3
+                MoreThan -> 4
+            }
+        }
+
+        companion object {
+            fun line(line: String): Line {
+                val chunks = line.map(::character)
+
+                return when (val illegal = corrupted(chunks)) {
+                    null -> Uncompleted(opened(chunks).map { (it).closing }.reversed())
+                    else -> Corrupted(illegal)
                 }
             }
 
-        return test.sorted()[test.size / 2]
-    }
+            private fun corrupted(line: List<Character>, opened: List<Opening> = listOf()): Closing? {
+                val current = line.firstOrNull() ?: return null
 
-    private fun corrupted(line: CharArray, opened: CharArray = charArrayOf()): Char? {
-        val current = line.firstOrNull() ?: return null
+                return when (current) {
+                    is Opening -> corrupted(line.drop(1), opened + current)
+                    is Closing -> if (current == opened.last().closing) {
+                        corrupted(line.drop(1), opened.dropLast(1))
+                    } else {
+                        current
+                    }
+                }
+            }
 
-        return if (opening(current)) {
-            corrupted(line.drop(1).toCharArray(), opened + current)
-        } else {
-            if (current == expectedClosing(opened.last())) {
-                corrupted(line.drop(1).toCharArray(), opened.dropLast(1).toCharArray())
-            } else {
-                current
+            private fun opened(line: List<Character>, opened: List<Opening> = listOf()): List<Opening> {
+                val current = line.firstOrNull() ?: return opened
+
+                return when (current) {
+                    is Opening -> opened(line.drop(1), opened + current)
+                    is Closing -> if (current == opened.last().closing) {
+                        opened(line.drop(1), opened.dropLast(1))
+                    } else {
+                        opened
+                    }
+                }
             }
         }
     }
 
-    private fun opened(line: CharArray, opened: CharArray = charArrayOf()): CharArray {
-        val current = line.firstOrNull() ?: return opened
-
-        return if (opening(current)) {
-            opened(line.drop(1).toCharArray(), opened + current)
-        } else {
-            if (current == expectedClosing(opened.last())) {
-                opened(line.drop(1).toCharArray(), opened.dropLast(1).toCharArray())
-            } else {
-                opened
-            }
-        }
-    }
-
-    private fun expectedClosing(opening: Char) = when (opening) {
-        "(".single() -> ")".single()
-        "[".single() -> "]".single()
-        "{".single() -> "}".single()
-        "<".single() -> ">".single()
-        else -> "?".single() //remove not possible case
-    }
-
-    private fun opening(char: Char) = (char in listOf("(", "[", "{", "<").map(String::single))
-    private fun closing(char: Char) = opening(char).not()
+    private fun List<Long>.winner() = sorted()[size / 2]
 }
+
 
 fun main() {
     val testInput = readInput("day10/Day10_test")
-    with(part1(testInput)) { check(26397 == this) { "result test 1: $this" } }
+    with(part1(testInput)) { check(26397L == this) { "result test 1: $this" } }
     with(part2(testInput)) { check(288957L == this) { "result test 2: $this" } }
 
     val input = readInput("day10/Day10")
