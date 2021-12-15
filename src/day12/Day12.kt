@@ -4,15 +4,22 @@ import day12.Day12.Cave.Companion.END
 import day12.Day12.Cave.Companion.START
 import day12.Day12.Cave.Small
 import day12.Day12.part1
+import day12.Day12.part2
 import printResult
 import readInput
 
 object Day12 {
 
-    fun part1(input: List<String>) = CaveSystem.parse(input).existingPaths().size
+    fun part1(input: List<String>) = CaveSystem.parse(input).paths(part1Rule).size
 
-    fun part2(input: List<String>): Int {
-        return 1
+    fun part2(input: List<String>) = CaveSystem.parse(input).paths(part2Rule).size
+
+    private val part1Rule: List<Cave>.(Cave) -> Boolean = { current -> current is Small && current in this }
+
+    private val part2Rule: List<Cave>.(Cave) -> Boolean = { current ->
+        current is Small
+                && current in this
+                && filterIsInstance<Small>().groupingBy { it }.eachCount().filterValues { it >= 2 }.isNotEmpty()
     }
 
     sealed class Cave(open val name: String) {
@@ -36,14 +43,16 @@ object Day12 {
     }
 
     class CaveSystem(private val paths: List<Path>) : List<Path> by paths {
-        fun existingPaths(
+        fun paths(
+            rule: List<Cave>.(Cave) -> Boolean,
             current: Cave = START,
             visited: List<Cave> = listOf(current)
         ): List<List<Cave>> = when (current) {
             END -> listOf(visited)
             else -> mapNotNull { it.connected(current) }
-                .filterNot { it is Small && it in visited }
-                .flatMap { cave -> existingPaths(cave, visited + cave) }
+                .filterNot { it == START }
+                .filterNot { rule(visited, it) }
+                .flatMap { cave -> paths(rule, cave, visited + cave) }
         }
 
         companion object {
@@ -56,11 +65,11 @@ object Day12 {
 
 fun main() {
     val testInput = readInput("day12/Day12_test")
-    with(part1(testInput)) { check(226 == this) { "result test 1: $this" } }
-//    with(part2(testInput)) { check(? == this) { "result test 2: $this" } }
+    with(part1(testInput)) { check(10 == this) { "result test 1: $this" } }
+    with(part2(testInput)) { check(36 == this) { "result test 2: $this" } }
 
     val input = readInput("day12/Day12")
     printResult("Part 1") { part1(input) }
-//    printResult("Part 2") { part2(input) }
+    printResult("Part 2") { part2(input) }
 }
 
