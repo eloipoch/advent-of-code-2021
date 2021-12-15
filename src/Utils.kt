@@ -30,3 +30,23 @@ fun List<Int>.countBy() = groupingBy { it }.eachCount()
  * Exmaples: 1=>1 2=>3 3=>6 4=>10 5=>15
  */
 fun Int.triangular() = (this * (this + 1)) / 2
+
+
+data class Position(val x: Int, val y: Int) {
+    private fun top() = Position(x, y - 1)
+    private fun topRight() = Position(x + 1, y - 1)
+    private fun right() = Position(x + 1, y)
+    private fun bottomRight() = Position(x + 1, y + 1)
+    private fun bottom() = Position(x, y + 1)
+    private fun bottomLeft() = Position(x - 1, y + 1)
+    private fun left() = Position(x - 1, y)
+    private fun topLeft() = Position(x - 1, y - 1)
+
+    private fun orthogonallyAdjacent() = listOf(top(), right(), bottom(), left())
+    private fun diagonallyAdjacent() = listOf(topRight(), bottomRight(), bottomLeft(), topLeft())
+    fun adjacent() = orthogonallyAdjacent() + diagonallyAdjacent()
+
+}
+
+fun <T> List<List<T>>.adjacent(position: Position): List<T> =
+    position.adjacent().mapNotNull { getOrNull(it.y)?.getOrNull(it.x) }
