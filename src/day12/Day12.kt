@@ -1,5 +1,6 @@
 package day12
 
+import day12.Day12.Cave
 import day12.Day12.Cave.Companion.END
 import day12.Day12.Cave.Companion.START
 import day12.Day12.Cave.Small
@@ -8,15 +9,17 @@ import day12.Day12.part2
 import printResult
 import readInput
 
+typealias VisitedCaves = List<Cave>
+
 object Day12 {
 
     fun part1(input: List<String>) = CaveSystem.parse(input).paths(part1Rule).size
 
     fun part2(input: List<String>) = CaveSystem.parse(input).paths(part2Rule).size
 
-    private val part1Rule: List<Cave>.(Cave) -> Boolean = { current -> current is Small && current in this }
+    private val part1Rule: VisitedCaves.(Cave) -> Boolean = { current -> current is Small && current in this }
 
-    private val part2Rule: List<Cave>.(Cave) -> Boolean = { current ->
+    private val part2Rule: VisitedCaves.(Cave) -> Boolean = { current ->
         current is Small
                 && current in this
                 && filterIsInstance<Small>().groupingBy { it }.eachCount().filterValues { it >= 2 }.isNotEmpty()
@@ -44,9 +47,9 @@ object Day12 {
 
     class CaveSystem(private val paths: List<Path>) : List<Path> by paths {
         fun paths(
-            rule: List<Cave>.(Cave) -> Boolean,
+            rule: VisitedCaves.(Cave) -> Boolean,
             current: Cave = START,
-            visited: List<Cave> = listOf(current)
+            visited: VisitedCaves = listOf(current)
         ): List<List<Cave>> = when (current) {
             END -> listOf(visited)
             else -> mapNotNull { it.connected(current) }
