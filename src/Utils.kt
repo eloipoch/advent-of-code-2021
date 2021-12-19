@@ -31,6 +31,18 @@ fun List<Int>.countBy() = groupingBy { it }.eachCount()
  */
 fun Int.triangular() = (this * (this + 1)) / 2
 
+fun <T, K> Grouping<T, K>.eachSumBy(keySelector: (T) -> Long): Map<K, Long> =
+    this.aggregate { _, accumulator, element, _ ->
+        when (accumulator) {
+            null -> keySelector(element)
+            else -> keySelector(element) + accumulator
+        }
+    }
+
+fun <T> T.repeat(amount: Int = 1, block: (T) -> T): T = when (amount) {
+    1 -> block(this)
+    else -> block(this).repeat(amount - 1, block)
+}
 
 data class Position(val x: Int, val y: Int) {
     private fun top() = Position(x, y - 1)
